@@ -255,6 +255,46 @@ const ChatInterface = () => {
                   <Settings size={20} />
                 </Button>
               </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Key size={20} />
+                    Настройки API
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="api-key">Perplexity API Key</Label>
+                    <Input
+                      id="api-key"
+                      type="password"
+                      placeholder="Введите ваш API ключ Perplexity"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      className="mt-2"
+                    />
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Получите ключ на{' '}
+                      <a 
+                        href="https://www.perplexity.ai/settings/api" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        perplexity.ai
+                      </a>
+                    </p>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setSettingsOpen(false)}>
+                      Отмена
+                    </Button>
+                    <Button onClick={saveApiKey}>
+                      Сохранить
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
             </Dialog>
             
             <Button
@@ -337,48 +377,6 @@ const ChatInterface = () => {
           </div>
         </div>
       </div>
-
-      {/* Settings Dialog */}
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Key size={20} />
-            Настройки API
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="api-key">Perplexity API Key</Label>
-            <Input
-              id="api-key"
-              type="password"
-              placeholder="Введите ваш API ключ Perplexity"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="mt-2"
-            />
-            <p className="text-sm text-muted-foreground mt-2">
-              Получите ключ на{' '}
-              <a 
-                href="https://www.perplexity.ai/settings/api" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                perplexity.ai
-              </a>
-            </p>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setSettingsOpen(false)}>
-              Отмена
-            </Button>
-            <Button onClick={saveApiKey}>
-              Сохранить
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
     </div>
   );
 };
