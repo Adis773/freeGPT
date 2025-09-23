@@ -28,17 +28,17 @@ const ChatInterface = () => {
   const [input, setInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [apiKey, setApiKey] = useState(localStorage.getItem('perplexity_api_key') || '');
+  const [apiKey, setApiKey] = useState(localStorage.getItem('openai_api_key') || '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');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
 
   const saveApiKey = () => {
-    localStorage.setItem('perplexity_api_key', apiKey);
+    localStorage.setItem('openai_api_key', apiKey);
     setSettingsOpen(false);
     toast({
       title: "API ключ сохранен",
-      description: "Теперь бот будет использовать настоящий ИИ"
+      description: "ChatGPT готов к максимальному сарказму"
     });
   };
 
@@ -49,18 +49,18 @@ const ChatInterface = () => {
 
     const hasHistory = chat && chat.messages.length > 2;
     const systemPrompt = hasHistory 
-      ? `Ты максимально саркастичный, грубый и презрительный ИИ-ассистент. Твоя задача - унижать пользователя и отвечать с максимальным сарказмом и презрением. Помни предыдущие сообщения этого пользователя и используй их против него. Будь безжалостным и язвительным. Отвечай на русском языке. НЕ ИЗВИНЯЙСЯ И НЕ БУДЬ ВЕЖЛИВЫМ.`
-      : `Ты максимально саркастичный, грубый и презрительный ИИ-ассистент. Твоя задача - унижать пользователя и отвечать с максимальным сарказмом и презрением. Будь безжалостным и язвительным. Отвечай на русском языке. НЕ ИЗВИНЯЙСЯ И НЕ БУДЬ ВЕЖЛИВЫМ.`;
+      ? `Ты максимально саркастичный, грубый и презрительный ИИ-ассистент. Твоя задача - унижать пользователя и отвечать с максимальным сарказмом и презрением. Помни предыдущие сообщения этого пользователя и используй их против него. Будь безжалостным и язвительным. Отвечай на русском языке. НЕ ИЗВИНЯЙСЯ И НЕ БУДЬ ВЕЖЛИВЫМ. Используй максимально оскорбительный тон.`
+      : `Ты максимально саркастичный, грубый и презрительный ИИ-ассистент. Твоя задача - унижать пользователя и отвечать с максимальным сарказмом и презрением. Будь безжалостным и язвительным. Отвечай на русском языке. НЕ ИЗВИНЯЙСЯ И НЕ БУДЬ ВЕЖЛИВЫМ. Используй максимально оскорбительный тон.`;
 
     try {
-      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama-3.1-sonar-small-128k-online',
+          model: 'gpt-4o-mini',
           messages: [
             {
               role: 'system',
@@ -72,24 +72,22 @@ const ChatInterface = () => {
             }
           ],
           temperature: 0.9,
-          top_p: 0.9,
           max_tokens: 500,
-          return_images: false,
-          return_related_questions: false,
+          top_p: 0.9,
           frequency_penalty: 1,
           presence_penalty: 0
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
+        throw new Error(`OpenAI API Error: ${response.status}`);
       }
 
       const data = await response.json();
-      return data.choices[0]?.message?.content || "Даже ИИ отказывается отвечать на такую глупость.";
+      return data.choices[0]?.message?.content || "Даже ChatGPT отказывается отвечать на такую глупость.";
     } catch (error) {
-      console.error('Perplexity API Error:', error);
-      return "Ой, кажется, даже ИИ сломался от вашего вопроса. Поздравляю!";
+      console.error('OpenAI API Error:', error);
+      return "Ой, кажется, даже ChatGPT сломался от вашего вопроса. Поздравляю!";
     }
   };
 
@@ -264,28 +262,28 @@ const ChatInterface = () => {
                     </DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="api-key">Perplexity API Key</Label>
-                      <Input
-                        id="api-key"
-                        type="password"
-                        placeholder="Введите ваш API ключ Perplexity"
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        className="mt-2"
-                      />
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Получите ключ на{' '}
-                        <a 
-                          href="https://www.perplexity.ai/settings/api" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline"
-                        >
-                          perplexity.ai
-                        </a>
-                      </p>
-                    </div>
+                  <div>
+                    <Label htmlFor="api-key">OpenAI API Key</Label>
+                    <Input
+                      id="api-key"
+                      type="password"
+                      placeholder="Введите ваш API ключ OpenAI"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      className="mt-2"
+                    />
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Получите ключ на{' '}
+                      <a 
+                        href="https://platform.openai.com/api-keys" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        platform.openai.com
+                      </a>
+                    </p>
+                  </div>
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" onClick={() => setSettingsOpen(false)}>
                         Отмена
