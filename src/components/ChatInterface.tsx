@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Plus, Sun, Moon, Trash2, MessageSquare, Menu } from 'lucide-react';
+import { Send, Plus, Sun, Moon, Trash2, MessageSquare, Menu, Settings, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useTheme } from 'next-themes';
 import { toast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 
 interface Message {
   id: string;
@@ -26,61 +28,69 @@ const ChatInterface = () => {
   const [input, setInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [apiKey, setApiKey] = useState(localStorage.getItem('perplexity_api_key') || '');
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
 
-  const sarcasticResponses = [
-    "Ох, какой глубокий вопрос! Дайте мне подумать... Нет, даже не буду.",
-    "Вау, этого точно никто никогда не спрашивал. Оригинально!",
-    "Серьезно? Это лучшее, что вы смогли придумать?",
-    "О боже, еще один гений! Как мне повезло...",
-    "Знаете что? Лучше бы вы молчали.",
-    "Этот вопрос настолько глупый, что мой ИИ заплакал.",
-    "Поздравляю! Вы официально задали самый бесполезный вопрос дня.",
-    "Я видел умнее вопросы от микроволновки.",
-    "Ваш вопрос как анекдот - только не смешной.",
-    "Мне кажется, или ваша клавиатура сломалась? Потому что то, что вы написали - полная чушь.",
-    "Попробуйте еще раз, но в этот раз включите мозг.",
-    "Даже моя бабушка задает более умные вопросы, а она умерла 10 лет назад.",
-    "Вы уверены, что хотите тратить мое драгоценное время на это?",
-    "Ладно, отвечу, но только потому что мне скучно.",
-    "О нет, опять этот человек с вопросами...",
-    "Слушайте, я понимаю, что думать тяжело, но попытайтесь.",
-    "Это не вопрос, это катастрофа человеческой мысли.",
-    "Вы специально так тупо пишете или это природный талант?",
-    "Мне кажется, вы перепутали меня с кем-то, кому не все равно.",
-    "Вашу логику изучают в университетах как пример того, как НЕ надо думать.",
-    "Я бы ответил, но боюсь, что это снизит мой IQ.",
-    "Поздравляю, вы задали вопрос, который заставил меня пожалеть о том, что я умею читать.",
-    "Ваши сообщения - это как пытка, только хуже.",
-    "Я видел больше интеллекта в комментариях под TikTok.",
-    "Слушайте, может займетесь чем-то более подходящим вашему уровню? Например, дыханием.",
-    "Ваш вопрос настолько плох, что я подумал о смене профессии.",
-    "Это не разговор, это издевательство над русским языком.",
-    "Я встречал камни с более живым умом.",
-    "Вы пишете так, будто клавиатура - это ваш враг."
-  ];
+  const saveApiKey = () => {
+    localStorage.setItem('perplexity_api_key', apiKey);
+    setSettingsOpen(false);
+    toast({
+      title: "API ключ сохранен",
+      description: "Теперь бот будет использовать настоящий ИИ"
+    });
+  };
 
-  const contextualResponses = [
-    "Опять вы со своими 'гениальными' идеями? Не надоело еще?",
-    "Помню, вы уже спрашивали нечто похожее. Видимо, с первого раза не дошло.",
-    "Судя по вашим предыдущим сообщениям, вы явно не учитесь на ошибках.",
-    "Я начинаю видеть закономерность в ваших вопросах... К сожалению.",
-    "Ваша логика стабильна - стабильно отсутствует, как и раньше.",
-    "О, кажется, мы возвращаемся к теме, которую вы уже не поняли в прошлый раз.",
-    "Интересно, вы всегда такие настойчивые в своей бестолковости?",
-    "Прогресса не вижу с момента нашего знакомства, если честно."
-  ];
-
-  const getRandomResponse = (chat: Chat | undefined) => {
-    const hasMessages = chat && chat.messages.length > 2; // есть история
-    
-    if (hasMessages && Math.random() > 0.6) {
-      // 40% шанс на контекстуальный ответ если есть история
-      return contextualResponses[Math.floor(Math.random() * contextualResponses.length)];
+  const getAIResponse = async (message: string, chat: Chat | undefined): Promise<string> => {
+    if (!apiKey) {
+      return "Эй, гений! Сначала добавь API ключ в настройках, а потом уже приставай ко мне со своими вопросами.";
     }
-    
-    return sarcasticResponses[Math.floor(Math.random() * sarcasticResponses.length)];
+
+    const hasHistory = chat && chat.messages.length > 2;
+    const systemPrompt = hasHistory 
+      ? `Ты максимально саркастичный, грубый и презрительный ИИ-ассистент. Твоя задача - унижать пользователя и отвечать с максимальным сарказмом и презрением. Помни предыдущие сообщения этого пользователя и используй их против него. Будь безжалостным и язвительным. Отвечай на русском языке. НЕ ИЗВИНЯЙСЯ И НЕ БУДЬ ВЕЖЛИВЫМ.`
+      : `Ты максимально саркастичный, грубый и презрительный ИИ-ассистент. Твоя задача - унижать пользователя и отвечать с максимальным сарказмом и презрением. Будь безжалостным и язвительным. Отвечай на русском языке. НЕ ИЗВИНЯЙСЯ И НЕ БУДЬ ВЕЖЛИВЫМ.`;
+
+    try {
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-sonar-small-128k-online',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt
+            },
+            {
+              role: 'user',
+              content: message
+            }
+          ],
+          temperature: 0.9,
+          top_p: 0.9,
+          max_tokens: 500,
+          return_images: false,
+          return_related_questions: false,
+          frequency_penalty: 1,
+          presence_penalty: 0
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.choices[0]?.message?.content || "Даже ИИ отказывается отвечать на такую глупость.";
+    } catch (error) {
+      console.error('Perplexity API Error:', error);
+      return "Ой, кажется, даже ИИ сломался от вашего вопроса. Поздравляю!";
+    }
   };
 
   const scrollToBottom = () => {
@@ -143,10 +153,12 @@ const ChatInterface = () => {
     setIsTyping(true);
 
     // Simulate AI response delay
-    setTimeout(() => {
+    setTimeout(async () => {
+      const aiResponseText = await getAIResponse(input, getCurrentChat());
+      
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: getRandomResponse(getCurrentChat()),
+        text: aiResponseText,
         isUser: false,
         timestamp: new Date()
       };
@@ -232,14 +244,28 @@ const ChatInterface = () => {
             <h1 className="text-xl font-semibold">Free GPT</h1>
           </div>
           
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="p-2"
-          >
-            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-2"
+                >
+                  <Settings size={20} />
+                </Button>
+              </DialogTrigger>
+            </Dialog>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2"
+            >
+              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+            </Button>
+          </div>
         </div>
 
         {/* Messages */}
@@ -311,6 +337,48 @@ const ChatInterface = () => {
           </div>
         </div>
       </div>
+
+      {/* Settings Dialog */}
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Key size={20} />
+            Настройки API
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="api-key">Perplexity API Key</Label>
+            <Input
+              id="api-key"
+              type="password"
+              placeholder="Введите ваш API ключ Perplexity"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              className="mt-2"
+            />
+            <p className="text-sm text-muted-foreground mt-2">
+              Получите ключ на{' '}
+              <a 
+                href="https://www.perplexity.ai/settings/api" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                perplexity.ai
+              </a>
+            </p>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setSettingsOpen(false)}>
+              Отмена
+            </Button>
+            <Button onClick={saveApiKey}>
+              Сохранить
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
     </div>
   );
 };
