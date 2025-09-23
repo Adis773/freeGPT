@@ -24,7 +24,7 @@ const ChatInterface = () => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const [input, setInput] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
@@ -44,10 +44,42 @@ const ChatInterface = () => {
     "Даже моя бабушка задает более умные вопросы, а она умерла 10 лет назад.",
     "Вы уверены, что хотите тратить мое драгоценное время на это?",
     "Ладно, отвечу, но только потому что мне скучно.",
-    "О нет, опять этот человек с вопросами..."
+    "О нет, опять этот человек с вопросами...",
+    "Слушайте, я понимаю, что думать тяжело, но попытайтесь.",
+    "Это не вопрос, это катастрофа человеческой мысли.",
+    "Вы специально так тупо пишете или это природный талант?",
+    "Мне кажется, вы перепутали меня с кем-то, кому не все равно.",
+    "Вашу логику изучают в университетах как пример того, как НЕ надо думать.",
+    "Я бы ответил, но боюсь, что это снизит мой IQ.",
+    "Поздравляю, вы задали вопрос, который заставил меня пожалеть о том, что я умею читать.",
+    "Ваши сообщения - это как пытка, только хуже.",
+    "Я видел больше интеллекта в комментариях под TikTok.",
+    "Слушайте, может займетесь чем-то более подходящим вашему уровню? Например, дыханием.",
+    "Ваш вопрос настолько плох, что я подумал о смене профессии.",
+    "Это не разговор, это издевательство над русским языком.",
+    "Я встречал камни с более живым умом.",
+    "Вы пишете так, будто клавиатура - это ваш враг."
   ];
 
-  const getRandomResponse = () => {
+  const contextualResponses = [
+    "Опять вы со своими 'гениальными' идеями? Не надоело еще?",
+    "Помню, вы уже спрашивали нечто похожее. Видимо, с первого раза не дошло.",
+    "Судя по вашим предыдущим сообщениям, вы явно не учитесь на ошибках.",
+    "Я начинаю видеть закономерность в ваших вопросах... К сожалению.",
+    "Ваша логика стабильна - стабильно отсутствует, как и раньше.",
+    "О, кажется, мы возвращаемся к теме, которую вы уже не поняли в прошлый раз.",
+    "Интересно, вы всегда такие настойчивые в своей бестолковости?",
+    "Прогресса не вижу с момента нашего знакомства, если честно."
+  ];
+
+  const getRandomResponse = (chat: Chat | undefined) => {
+    const hasMessages = chat && chat.messages.length > 2; // есть история
+    
+    if (hasMessages && Math.random() > 0.6) {
+      // 40% шанс на контекстуальный ответ если есть история
+      return contextualResponses[Math.floor(Math.random() * contextualResponses.length)];
+    }
+    
     return sarcasticResponses[Math.floor(Math.random() * sarcasticResponses.length)];
   };
 
@@ -114,7 +146,7 @@ const ChatInterface = () => {
     setTimeout(() => {
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: getRandomResponse(),
+        text: getRandomResponse(getCurrentChat()),
         isUser: false,
         timestamp: new Date()
       };
@@ -159,7 +191,10 @@ const ChatInterface = () => {
               className={`group flex items-center justify-between p-3 mb-1 rounded-lg cursor-pointer hover:bg-sidebar-accent transition-colors ${
                 activeChat === chat.id ? 'bg-sidebar-accent' : ''
               }`}
-              onClick={() => setActiveChat(chat.id)}
+              onClick={() => {
+                setActiveChat(chat.id);
+                setSidebarOpen(false);
+              }}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <MessageSquare size={16} className="text-sidebar-foreground/60" />
